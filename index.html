@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+   <meta charset="utf-8">
+   <title>Docker Internals: The Real Magic Behind Containers</title>
+   <link rel="stylesheet" href="https://unpkg.com/reveal.js/dist/reveal.css">
+   <link rel="stylesheet" href="https://unpkg.com/reveal.js/dist/theme/white.css">
+   <meta name="color-scheme" content="light dark">
+   <style>
+      :root {
+         --moby-blue: #1D63ED;
+         --light-blue: #E5F2FC;
+         --off-black: #17191E;
+      }
+
+      body {
+         background: var(--off-black);
+         color: var(--light-blue);
+      }
+
+      .reveal {
+         font-family: 'Segoe UI', 'Arial', sans-serif;
+         color: var(--light-blue);
+         background: var(--off-black);
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+         color: var(--moby-blue);
+         text-shadow: 2px 2px 4px #000a;
+      }
+
+      .reveal h1 {
+         background: var(--moby-blue);
+         color: #fff;
+         padding: 0.2em 1.2em;
+         border-radius: 18px;
+         display: inline-block;
+         font-size: 2.5rem;
+      }
+
+      .reveal h2,
+      .reveal h3 {
+         color: var(--moby-blue);
+      }
+
+      .reveal .slide-icons img {
+         height: 64px;
+         vertical-align: middle;
+         border-radius: 12px;
+         background: #fff;
+         box-shadow: 0 2px 10px 0 #0003;
+      }
+
+      .reveal .slide-table th,
+      .reveal .slide-table td {
+         border: 1px solid var(--moby-blue);
+         padding: 8px 16px;
+         font-size: 0.75em !important;
+
+      }
+
+      .reveal .slide-table {
+         border-collapse: collapse;
+         margin: 0 auto;
+         background: var(--light-blue);
+         color: var(--off-black);
+         border-radius: 8px;
+         overflow: hidden;
+      }
+
+      .down-arrow {
+         font-size: 2em;
+         color: var(--moby-blue);
+         margin-top: 1em;
+         animation: bounce 1.5s infinite;
+      }
+
+      @keyframes bounce {
+
+         0%,
+         100% {
+            transform: translateY(0);
+         }
+
+         50% {
+            transform: translateY(12px);
+         }
+      }
+
+      .fragment.highlight {
+         color: #1D63ED;
+         font-weight: bold;
+         text-shadow: 0 0 8px #1D63ED44;
+      }
+
+      .myth-q {
+         color: #fff;
+         background: var(--moby-blue);
+         padding: 0.25em 0.7em;
+         border-radius: 8px;
+         font-style: italic;
+         display: inline-block;
+         margin-bottom: 0.25em;
+      }
+
+      .myth-reality {
+         color: var(--moby-blue);
+         font-weight: bold;
+         margin-left: 0.5em;
+      }
+
+      .reveal section img {
+         box-shadow: 0 4px 24px 0 #0004;
+         border-radius: 12px;
+         background: #fff;
+         max-width: 80%;
+         margin: 0.5em auto;
+         display: block;
+      }
+
+      .thank-you {
+         background: var(--moby-blue);
+         color: #fff;
+         border-radius: 24px;
+         padding: 2em 2em 1em 2em;
+         box-shadow: 0 8px 32px 0 #0008;
+         text-align: center;
+         font-size: 1.2em;
+         letter-spacing: 1px;
+      }
+
+      .thank-you small {
+         display: block;
+         font-size: 0.55em;
+         margin-top: 1.5em;
+         color: #E5F2FC;
+         font-weight: 400;
+      }
+
+      .reveal a {
+         color: var(--moby-blue);
+         text-decoration: underline;
+      }
+
+      td,
+      th,
+      li {
+         font-size: 0.85em !important;
+
+      }
+   </style>
+</head>
+
+<body>
+   <div class="reveal">
+      <div class="slides">
+
+         <!-- Slide 1: Title -->
+         <section>
+            <div style="text-align:center;">
+               <h1>Docker Internals</h1>
+               <h3 style="margin-top:0.5em;">The Real Magic Behind Containers</h3>
+               <p style="font-size:1.2em; color:#fff; margin-top:1em;">
+                  <em>Kernel Primitives to Cloud-Native Power</em>
+               </p>
+            </div>
+         </section>
+
+         <!-- Slide 2: Why Containers? -->
+         <section>
+            <h2>Why Containers?</h2>
+            <ul>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Consistent environments:</b> Solves the “works on my machine” problem.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Efficient isolation:</b> They isolate apps without VM overhead, making them lightweight and fast.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Portability:</b> A container image runs anywhere a runtime is present, regardless of infrastructure.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Cloud-native ready:</b> Containers are the backbone of microservices and scalable architectures.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Improved security:</b> Containers isolate apps, reducing risk and making failures less impactful.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Effortless scaling:</b> Easily add or remove containers to scale and support rapid development.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Automated management:</b> Orchestration tools automate deployment, updates, and monitoring.</li>
+
+            </ul>
+         </section>
+
+         <!-- Slide 3: What is a Container? -->
+         <section>
+            <h2>What is a Container?</h2>
+            <ul>
+               <li class="fragment">A <b>container</b> is a lightweight, isolated unit that packages an application and all its dependencies</li>
+               <li class="fragment">Runs as a process on the host, sharing the Linux kernel</li>
+               <li class="fragment">Isolation and resource control provided by kernel features, not by running a separate OS</li>
+            </ul>
+            <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/9812sj9urd3dn97tfn7t.png" alt="Container vs VM" />
+         </section>
+
+         <!-- Slide 4: Container vs Virtual Machine -->
+         <section>
+            <h2>Container vs Virtual Machine</h2>
+            <table class="slide-table">
+               <thead>
+                  <tr style="background:#E5F2FC;">
+                     <th>Feature</th>
+                     <th>Container</th>
+                     <th>Virtual Machine</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td><b>Kernel</b></td>
+                     <td>Shares the host OS kernel</td>
+                     <td>Runs its own kernel (guest OS)</td>
+                  </tr>
+                  <tr>
+                     <td><b>Startup Time</b></td>
+                     <td>Very fast (seconds)</td>
+                     <td>Slow (can take minutes)</td>
+                  </tr>
+                  <tr>
+                     <td><b>Resource</b></td>
+                     <td>Lightweight, low memory and CPU overhead</td>
+                     <td>Heavy, higher memory and CPU overhead</td>
+                  </tr>
+                  <tr>
+                     <td><b>Image Size</b></td>
+                     <td>Small (megabytes)</td>
+                     <td>Large (gigabytes)</td>
+                  </tr>
+                  <tr>
+                     <td><b>Isolation</b></td>
+                     <td>Process-level isolation (shared kernel)</td>
+                     <td>Full system isolation (hardware-level)</td>
+                  </tr>
+                  <tr>
+                     <td><b>Portability</b></td>
+                     <td>High, but kernel-dependent</td>
+                     <td>Very high, can run any OS on any host</td>
+                  </tr>
+                  <tr>
+                     <td><b>Density</b></td>
+                     <td>Can run many containers per host</td>
+                     <td>Fewer VMs per host due to overhead</td>
+                  </tr>
+                  <tr>
+                     <td><b>Use Case</b></td>
+                     <td>Microservices, cloud-native apps, CI/CD</td>
+                     <td>Legacy apps, running multiple OS types</td>
+                  </tr>
+                  <tr>
+                     <td><b>Management</b></td>
+                     <td>Managed by Docker Engine (orchestrators like Kubernetes)</td>
+                     <td>Managed by hypervisor (VMware, Hyper-V, etc.)</td>
+                  </tr>
+               </tbody>
+            </table>
+         </section>
+
+         <!-- Slide 5: The Magic: Namespaces and cgroups -->
+         <section>
+            <h2>The Magic: Namespaces & cgroups</h2>
+            <ul>
+               <li class="fragment"><b>Namespaces:</b> Isolate what a process can see, such as files, processes, and the network, creating a private environment for each container.</li>
+               <li class="fragment"><b>cgroups:</b> Control how much resource a process or group can use, including CPU, memory, and I/O, ensuring fair resource sharing.</li>
+               <li class="fragment">Together, they create the powerful illusion of a standalone system for every single container running on a shared host.</li>
+               <li class="fragment"><b>Fine-grained resource limits:</b> cgroups allow you to set precise limits on CPU, memory, disk, and network usage for each container or group of processes.</li>
+               <li class="fragment"><b>Prioritization and accounting:</b> cgroups can prioritize critical workloads and track resource usage per group, helping with monitoring and billing.</li>
+               <li class="fragment"><b>Dynamic resource control:</b> Administrators can freeze, stop, or restart all processes in a cgroup with a single command, enabling flexible operations and maintenance.</li>
+               <li class="fragment"><b>Isolation for security and stability:</b> Namespaces ensure containers cannot see or affect each other’s resources, boosting both security and system stability.</li>
+            </ul>
+         </section>
+
+         <!-- Slide 6: Linux Namespaces -->
+         <section>
+            <h2>Linux Namespaces</h2>
+            <ul>
+               <li><b>PID</b>: Process IDs - separate process trees</li>
+               <li><b>NET</b>: Network - own interfaces, IPs</li>
+               <li><b>MNT</b>: Mount - own filesystem view</li>
+               <li><b>UTS</b>: Hostname/domain isolation</li>
+               <li><b>USER</b>: User/group IDs</li>
+               <li><b>IPC</b>: Shared memory, message queues</li>
+               <li><b>CGROUP</b>: cgroup view isolation</li>
+            </ul>
+            <p>To list namespaces use the following command</p>
+            <img src="images/namespaces.png" alt="Linux namespaces lsns example" />
+
+         </section>
+
+         <!-- Slide 7: Linux cgroups (vertical basement slides) -->
+         <section>
+            <section>
+               <h2>Linux cgroups</h2>
+               <ul>
+                  <li class="fragment"><b>Resource management:</b> Control Groups enable efficient resource management for groups of related processes on a system.</li>
+                  <li class="fragment"><b>Set limits:</b> Limit CPU, memory, disk I/O, and network bandwidth for each group of processes to prevent resource contention.</li>
+                  <li class="fragment"><b>Prevent hogging:</b> Prevent resource hogging and ensure fair allocation by enforcing quotas and priorities for all workloads.</li>
+                  <li class="fragment"><b>Hierarchical organization:</b> cgroups are hierarchical, letting you nest and organize groups for complex resource policies and inheritance.</li>
+                  <li class="fragment"><b>Dynamic adjustment:</b> Resource limits and priorities can be dynamically adjusted on-the-fly without restarting processes or containers.</li>
+                  <li class="fragment"><b>Isolation and containment:</b> cgroups, together with namespaces, isolate workloads for improved security and system stability.</li>
+               </ul>
+            </section>
+            <section>
+               <h2>How CPU Limits Work</h2>
+               <ul>
+                  <li class="fragment">CPU quota/period controls total CPU time for all processes in a cgroup</li>
+                  <li class="fragment">Example: <code>echo "200000 100000" > cpu.max</code> allows up to 2 CPU cores (200%)</li>
+                  <li class="fragment">All threads in the cgroup share this quota</li>
+                  <li class="fragment">If quota is 100%, all threads together can use one core's worth of CPU time per period</li>
+               </ul>
+            </section>
+            <section>
+               <h2>Multi-Core, Multi-Threading, and Hierarchy</h2>
+               <ul>
+                  <li class="fragment">On multi-core systems, quota is distributed across all cores</li>
+                  <li class="fragment">Threads can run in parallel; when the total quota is used up, all are throttled until the next period</li>
+                  <li class="fragment highlight">Example: On a 4-core system, a 200% quota allows all 4 cores at 50% each, or 2 cores at 100%</li>
+                  <li class="fragment">CPU time can also be distributed by <b>weight</b> among child cgroups (proportional sharing)</li>
+               </ul>
+            </section>
+         </section>
+
+         <!-- Slide 8: Myth vs Reality -->
+         <section>
+            <h2>Container Myths <span style="color:#aaa;">vs</span> Reality</h2>
+            <ul>
+               <li class="fragment">
+                  <span class="myth-q">&ldquo;Containers are just lightweight VMs.&rdquo;</span>
+                  <br><span class="myth-reality">Reality:</span> Containers are isolated processes sharing the host kernel!
+               </li>
+               <li class="fragment" style="margin-top: 10px;">
+                  <span class="myth-q">&ldquo;Containers are always secure.&rdquo;</span>
+                  <br><span class="myth-reality">Reality:</span> Kernel vulnerabilities can affect all containers on a host.
+               </li>
+            </ul>
+         </section>
+
+         <!-- Slide 9: Life of a Container -->
+         <section>
+            <h2>Life of a Docker Container</h2>
+            <img src="https://signoz.io/img/blog/2022/07/docker_container_lifecycle_3x.webp" alt="Docker Container Lifecycle" />
+            <ul>
+               <li class="fragment">Created &rarr; Running &rarr; Paused/Unpaused &rarr; Stopped &rarr; Deleted</li>
+               <li class="fragment">You can <code>pause</code>, <code>unpause</code>, <code>stop</code>, <code>rm</code> containers at any time</li>
+            </ul>
+         </section>
+
+         <!-- ... (rest of your slides unchanged, or continue as before) ... -->
+
+         <!-- Slide: Thank You -->
+         <section>
+            <div class="thank-you">
+               <span style="font-size:2em; font-weight:bold; letter-spacing:2px;">Thank You!</span>
+               <div style="margin:1em 0 0.5em 0; font-size:1.3em;">
+                  <span style="color:#E5F2FC;">Questions or Feedback?</span>
+               </div>
+               <small>
+                  Prepared by Harsh Raj Dubey (24MF10006)<br>
+                  <span style="color:#E5F2FC;">Let's connect on <a href="https://github.com/harhrajdubey" target="_blank" style="color:#fff;">GitHub</a>!</span>
+               </small>
+            </div>
+         </section>
+
+      </div>
+   </div>
+   <script src="https://unpkg.com/reveal.js/dist/reveal.js"></script>
+   <script>
+      Reveal.initialize({
+         hash: true,
+         transition: 'convex',
+         backgroundTransition: 'fade',
+         controls: true,
+         center: true,
+         plugins: [],
+         width: '100%',
+         height: '100%',
+
+      });
+   </script>
+</body>
+
+</html>
