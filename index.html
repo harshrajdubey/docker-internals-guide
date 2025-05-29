@@ -9,7 +9,7 @@
    <meta name="color-scheme" content="light dark">
    <style>
       :root {
-         --moby-blue: #1D63ED;
+         --moby-blue: #b0c7f6;
          --light-blue: #E5F2FC;
          --off-black: #17191E;
       }
@@ -33,12 +33,12 @@
       }
 
       .reveal h1 {
-         background: var(--moby-blue);
+         background: #1D63ED;
          color: #fff;
          padding: 0.2em 1.2em;
-         border-radius: 18px;
+         border-radius: 25px;
          display: inline-block;
-         font-size: 2.5rem;
+         font-size: 4.5rem;
       }
 
       .reveal h2,
@@ -98,7 +98,7 @@
 
       .myth-q {
          color: #fff;
-         background: var(--moby-blue);
+         background: #1D63ED;
          padding: 0.25em 0.7em;
          border-radius: 8px;
          font-style: italic;
@@ -122,7 +122,7 @@
       }
 
       .thank-you {
-         background: var(--moby-blue);
+         background: #1D63ED;
          color: #fff;
          border-radius: 24px;
          padding: 2em 2em 1em 2em;
@@ -150,6 +150,15 @@
       li {
          font-size: 0.85em !important;
 
+      }
+
+      body,
+      .reveal {
+         /* Off Black */
+         background-image: url('images/bg.png');
+         background-repeat: contain;
+         /* Use a dark overlay for readability */
+         position: relative;
       }
    </style>
 </head>
