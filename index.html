@@ -164,7 +164,7 @@
                <h1>Docker Internals</h1>
                <h3 style="margin-top:0.5em;">The Real Magic Behind Containers</h3>
                <p style="font-size:1.2em; color:#fff; margin-top:1em;">
-                  <em>Kernel Primitives to Cloud-Native Power</em>
+                  <em>Kernel Fundamentals to Cloud-Native Power</em>
                </p>
             </div>
          </section>
@@ -174,10 +174,10 @@
             <h2>Why Containers?</h2>
             <ul>
                <li class="fragment" style="margin-bottom: 10px;"><b>Consistent environments:</b> Solves the “works on my machine” problem.</li>
-               <li class="fragment" style="margin-bottom: 10px;"><b>Efficient isolation:</b> They isolate apps without VM overhead, making them lightweight and fast.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Efficient isolation:</b> They isolate apps without VM overhead, making it lightweight and fast.</li>
                <li class="fragment" style="margin-bottom: 10px;"><b>Portability:</b> A container image runs anywhere a runtime is present, regardless of infrastructure.</li>
-               <li class="fragment" style="margin-bottom: 10px;"><b>Cloud-native ready:</b> Containers are the backbone of microservices and scalable architectures.</li>
-               <li class="fragment" style="margin-bottom: 10px;"><b>Improved security:</b> Containers isolate apps, reducing risk and making failures less impactful.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>Cloud-native ready:</b> Today most of the cloud-services works on container apporach.</li>
+               <li class="fragment" style="margin-bottom: 10px;"><b>More security:</b> Containers isolate apps, decreasing risk and making failures less impactful.</li>
                <li class="fragment" style="margin-bottom: 10px;"><b>Effortless scaling:</b> Easily add or remove containers to scale and support rapid development.</li>
                <li class="fragment" style="margin-bottom: 10px;"><b>Automated management:</b> Orchestration tools automate deployment, updates, and monitoring.</li>
 
@@ -189,8 +189,8 @@
             <h2>What is a Container?</h2>
             <ul>
                <li class="fragment">A <b>container</b> is a lightweight, isolated unit that packages an application and all its dependencies</li>
-               <li class="fragment">Runs as a process on the host, sharing the Linux kernel</li>
-               <li class="fragment">Isolation and resource control provided by kernel features, not by running a separate OS</li>
+               <li class="fragment">Runs as a process on the host, <b>SHARING</b> the Linux kernel</li>
+               <li class="fragment">Isolation and resource control provided by kernel features, and <b>not running a separate OS</b></li>
             </ul>
             <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/9812sj9urd3dn97tfn7t.png" alt="Container vs VM" />
          </section>
@@ -219,8 +219,8 @@
                   </tr>
                   <tr>
                      <td><b>Resource</b></td>
-                     <td>Lightweight, low memory and CPU overhead</td>
-                     <td>Heavy, higher memory and CPU overhead</td>
+                     <td>Lightweight, low memory and CPU utilization</td>
+                     <td>Heavy, higher memory and CPU utilization</td>
                   </tr>
                   <tr>
                      <td><b>Image Size</b></td>
@@ -262,9 +262,9 @@
             <ul>
                <li class="fragment"><b>Namespaces:</b> Isolate what a process can see, such as files, processes, and the network, creating a private environment for each container.</li>
                <li class="fragment"><b>cgroups:</b> Control how much resource a process or group can use, including CPU, memory, and I/O, ensuring fair resource sharing.</li>
-               <li class="fragment">Together, they create the powerful illusion of a standalone system for every single container running on a shared host.</li>
-               <li class="fragment"><b>Fine-grained resource limits:</b> cgroups allow you to set precise limits on CPU, memory, disk, and network usage for each container or group of processes.</li>
-               <li class="fragment"><b>Prioritization and accounting:</b> cgroups can prioritize critical workloads and track resource usage per group, helping with monitoring and billing.</li>
+               <li class="fragment">Together, they create the illusion of a standalone system for every single container running on a shared host.</li>
+               <li class="fragment"><b>Per-process resource throttling:</b> cgroups allow you to set precise limits on CPU, memory, disk, and network usage for each container or group of processes.</li>
+               <li class="fragment"><b>Prioritization and accounting:</b> cgroups can prioritize critical workloads and track resource usage per group.</li>
                <li class="fragment"><b>Dynamic resource control:</b> Administrators can freeze, stop, or restart all processes in a cgroup with a single command, enabling flexible operations and maintenance.</li>
                <li class="fragment"><b>Isolation for security and stability:</b> Namespaces ensure containers cannot see or affect each other’s resources, boosting both security and system stability.</li>
             </ul>
@@ -272,18 +272,25 @@
 
          <!-- Slide 6: Linux Namespaces -->
          <section>
-            <h2>Linux Namespaces</h2>
-            <ul>
-               <li><b>PID</b>: Process IDs - separate process trees</li>
-               <li><b>NET</b>: Network - own interfaces, IPs</li>
-               <li><b>MNT</b>: Mount - own filesystem view</li>
-               <li><b>UTS</b>: Hostname/domain isolation</li>
-               <li><b>USER</b>: User/group IDs</li>
-               <li><b>IPC</b>: Shared memory, message queues</li>
-               <li><b>CGROUP</b>: cgroup view isolation</li>
-            </ul>
-            <p>To list namespaces use the following command</p>
-            <img src="images/namespaces.png" alt="Linux namespaces lsns example" />
+            <section>
+               <h2>Linux Namespaces</h2>
+               <p>The Foundation of Container Isolation</p>
+               <ul>
+                  <li><b>PID</b>: Gives each container its own process tree. Processes in one container can’t affect others.</li>
+                  <li><b>NET</b>: Containers have their own IPs, ports, and network stack, like separate virtual networks.</li>
+                  <li><b>MNT</b>: Controls the container’s filesystem view, isolated from the host unless explicitly shared.</li>
+                  <li><b>UTS</b>: Lets containers set their own hostname and domain, separate from the host system.</li>
+                  <li><b>USER</b>: Containers can map their own user IDs, root inside doesn't mean root outside.</li>
+                  <li><b>IPC</b>: Isolates shared memory and message queues between containers.</li>
+                  <li><b>CGROUP</b>: Separates and limits CPU, memory, and other resource usage per container.</li>
+               </ul>
+            </section>
+
+            <section>
+               <h2>Linux Namespace Example</h2>
+               <p>To list namespaces use the following command</p>
+               <img src="images/namespaces.png" alt="Linux namespaces lsns example" />
+            </section>
 
          </section>
 
